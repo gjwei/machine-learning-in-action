@@ -13,9 +13,7 @@ from numpy import array, int8, uint8, zeros
 
 def get_filename(name):
     """得到指定文件的路径"""
-    if os.path.exists(os.path.join(os.path.dirname(__path__), name)):
-        os.system('/data/get_mnist.sh')
-    return os.path.join(os.path.dirname(__path__), name)
+    return os.path.join(os.path.dirname(__file__), name)
 
 def load_mnist():
     
