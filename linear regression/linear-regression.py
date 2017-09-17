@@ -32,7 +32,7 @@ class LR(object):
             for i in range(len(X)):
                 error += (self.lost_function(X[i], y[i]))
                 lost = (self.output(X[i]) - y[i]) * X[i]  # 损失函数的导数值(1, n+1)
-                self.weight -= (self.alpha * lost)
+                self.weight -= (self.alpha * lost)  # 没经过一个数据都要更新一次weight
             self.errors.append(error)
             print("{i}the iteration the lost is {lost}".format(i=iter, lost=self.errors[-1]))
         return self
