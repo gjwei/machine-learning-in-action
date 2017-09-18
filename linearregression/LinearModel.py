@@ -6,9 +6,9 @@
 """
 import logging
 
-# import autograd.numpy as np
+import autograd.numpy as np
 from autograd import grad
-import numpy as np
+# import numpy as np
 
 from base import BaseEstimator
 from metrics.metrics import mean_squared_error, binary_crossentropy
@@ -74,8 +74,11 @@ class BasicRegression(BaseEstimator):
         
         self._train()
     
-    def _add_intercept(self, X):
+    @staticmethod
+    def _add_intercept(X):
         b = np.ones([X.shape[0], 1])
+        # print(b.shape, X.shape)
+        
         return np.concatenate([b, X], axis=1)
     
     def _add_penalty(self, loss, w):
@@ -88,7 +91,7 @@ class BasicRegression(BaseEstimator):
         
     def _train(self):
         self.theta,  self.errors = self._gradient_descent()
-        logging.info("Theta: %s" % self.theta.flatten())
+        # print("Theta: %s" % self.theta.flatten())
         
     def _predict(self, X=None):
         """计算输出"""
@@ -105,16 +108,18 @@ class BasicRegression(BaseEstimator):
             cost_d = grad(self._loss)
             # calculate gradient and update theta
             delta = cost_d(theta)
+            # print(delta)
+            
             theta -= self.lr * delta
             
             errors.append(self._cost(self.X, self.y, theta))
-            logging.info("Iteration %s, error %s" % (i, errors[i]))
+            print("Iteration %s, error %s" % (i, errors[i]))
             
-            error_diff = np.linalg.norm(errors[i - 1], errors[i])
+            error_diff = np.linalg.norm(errors[i - 1] - errors[i])
             
-            if error_diff < self.tolerance:
-                logging.info('Convergence has reached.')
-                break
+            # if abs(error_diff) < self.tolerance:
+            #     print('Convergence has reached.')
+            #     break
                 
         return theta, errors
     
@@ -125,7 +130,9 @@ class LogisticRegression(BasicRegression):
         self.cost_fun = binary_crossentropy
         
     def _loss(self, w):
-        loss = self.cost_fun(self.y, self.sigmoid(np.dot(self.X, w)))
+        loss = self.cost_fun(self.y,
+                             self.sigmoid(np.dot(self.X, w)))
+        # print(self.sigmoid(np.dot(self.X, w)))
         return loss
     
     @staticmethod
