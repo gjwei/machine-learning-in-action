@@ -17,7 +17,7 @@ class SVM(BaseEstimator):
         self.max_iters = max_iters
         
         self.b = 0
-        self.alphas = None
+        self.alpha = None
         self.kernel_matrix = None
 
     def fit(self, X, y=None):
@@ -35,13 +35,20 @@ class SVM(BaseEstimator):
         return self._train()
     
     def _train(self):
+        """
+        训练SVM，使用SMO算法进行训练，详情见：
+       ` http://bitjoy.net/2016/05/02/svm-smo-algorithm/`
+       https://zh.wikipedia.org/wiki/%E5%BA%8F%E5%88%97%E6%9C%80%E5%B0%8F%E4%BC%98%E5%8C%96%E7%AE%97%E6%B3%95
+       
+        
+        """
         iters = 0
         while iters < self.max_iters:
             iters += 1
             alpha_prev = np.copy(self.alpha)
         
             for j in range(self.n_samples):
-                # Pick random i
+                # Pick random i, 用于SMO的坐标梯度上升
                 i = self.random_index(j)
             
                 eta = 2.0 * self.K[i, j] - self.K[i, i] - self.K[j, j]
@@ -75,9 +82,53 @@ class SVM(BaseEstimator):
         
             # Check convergence
             diff = np.linalg.norm(self.alpha - alpha_prev)
-            if diff < self.tol:
+            if diff < self.tolerance:
                 break
-        logging.info('Convergence has reached after %s.' % iters)
+        print('Convergence has reached after %s.' % iters)
     
         # Save support vectors index
         self.sv_idx = np.where(self.alpha > 0)[0]
+        
+    def random_index(self, j):
+        i = j
+        while i == j:
+            i = np.random.randint(0, self.n_samples - 1)
+        return i
+    
+    def _error(self, i):
+        return self._predict_row(self.X[i]) - self.y[i]
+        
+    def _predict_row(self, x):
+        """对单个数据进行预测
+        f(x) = alpha* y * k(x, X) + b
+        详情见西瓜书P127
+        """
+        k_v = self.kernel(self.X[self.sv_idx], x)
+        return np.dot((self.alpha[self.sv_idx] * self.y[self.sv_idx]).T, k_v.T) + self.b
+        
+    def _find_bounds(self, i, j):
+        """Find L and H such that L <= alpha <= H.
+        Also, alpha must satisfy the constraint 0 <= αlpha <= C.
+        """
+        if self.y[i] != self.y[j]:
+            L = max(0, self.alpha[j] - self.alpha[i])
+            H = min(self.C, self.C - self.alpha[i] + self.alpha[j])
+        else:
+            L = max(0, self.alpha[i] + self.alpha[j] - self.C)
+            H = min(self.C, self.alpha[i] + self.alpha[j])
+        return L, H
+    
+    def clip(self, alpha, H, L):
+        """
+        alpha需要满足0 < a < C的要求
+        :param alpha:
+        :param H:
+        :param L:
+        :return:
+        """
+        if alpha > H:
+            return H
+        elif alpha < L:
+            return L
+        return alpha
+        
